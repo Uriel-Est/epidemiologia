@@ -1,0 +1,111 @@
+| Variável         | Tradução / Significado |
+|------------------|------------------------|
+| contador         | Contador (índice da linha) |
+| TIPOBITO         | Tipo de óbito |
+| DTOBITO          | Data do óbito |
+| DTNASC           | Data de nascimento |
+| IDADE            | Idade |
+| SEXO             | Sexo |
+| RACACOR          | Raça/Cor |
+| ESTCIV           | Estado civil |
+| ESC              | Escolaridade |
+| CODBAIRES        | Código do bairro de residência |
+| CODMUNRES        | Código do município de residência |
+| LOCOCOR          | Local de ocorrência |
+| CODMUNOCOR       | Código do município de ocorrência |
+| IDADEMAE         | Idade da mãe |
+| ESCMAE           | Escolaridade da mãe |
+| QTDFILVIVO       | Quantidade de filhos vivos |
+| QTDFILMORT       | Quantidade de filhos mortos |
+| GRAVIDEZ         | Tipo de gravidez |
+| GESTACAO         | Tempo de gestação |
+| PARTO            | Tipo de parto |
+| OBITOPARTO       | Óbito relacionado ao parto |
+| PESO             | Peso ao nascer |
+| OBITOGRAV        | Óbito relacionado à gravidez |
+| OBITOPUERP       | Óbito no puerpério |
+| ASSISTMED        | Assistência médica |
+| EXAME            | Exame realizado |
+| CIRURGIA         | Cirurgia realizada |
+| NECROPSIA        | Necropsia realizada |
+| CAUSABAS         | Causa básica do óbito |
+| LINHAA–LINHAII   | Linhas da declaração de óbito (causas associadas) |
+| CIRCOBITO        | Circunstância do óbito |
+| ACIDTRAB         | Acidente de trabalho |
+| FONTE            | Fonte da informação |
+| CODESTAB         | Código do estabelecimento |
+| ATESTANTE        | Tipo de atestante |
+| UFINFORM         | Unidade federativa informante |
+| CONTADOR         | Repetido: contador |
+| HORAOBITO        | Hora do óbito |
+| CODBAIOCOR       | Código do bairro de ocorrência |
+| TPASSINA         | Tipo de assinante |
+| DTATESTADO       | Data do atestado |
+| TPPOS            | Tipo de posição (investigação) |
+| DTINVESTIG       | Data da investigação |
+| CAUSABAS_O       | Causa básica original |
+| DTCADASTRO       | Data de cadastro |
+| FONTEINV         | Fonte da investigação |
+| DTRECEBIM        | Data de recebimento |
+| CB_PRE           | Causa básica prévia |
+| ORIGEM           | Origem da informação |
+| NUMERODN         | Número da Declaração de Nascido Vivo |
+| MORTEPARTO       | Morte relacionada ao parto |
+| DTCADINF         | Data de cadastro da informação |
+| TPOBITOCOR       | Tipo de óbito ocorrido |
+| DTCADINV         | Data de cadastro da investigação |
+| COMUNSVOIM       | Comunicação do Serviço de Vigilância |
+| DTRECORIG        | Data de recebimento da origem |
+| DTRECORIGA       | Data alternativa de recebimento |
+| CAUSAMAT         | Causa materna |
+| ESC2010          | Escolaridade segundo classificação de 2010 |
+| ESCMAE2010       | Escolaridade da mãe segundo classificação de 2010 |
+| STDOEPIDEM       | Situação epidemiológica |
+| STDONOVA         | Situação epidemiológica nova |
+| CODMUNCART       | Código do município do cartório |
+| CODCART          | Código do cartório |
+| NUMREGCART       | Número de registro no cartório |
+| DTREGCART        | Data de registro no cartório |
+| SERIESCFAL       | Série escolar do falecido |
+| ESCMAEAGR1       | Escolaridade da mãe agrupada (nível 1) |
+| ESCFALAGR1       | Escolaridade do falecido agrupada (nível 1) |
+| SERIESCMAE       | Série escolar da mãe |
+| SEMAGESTAC       | Semanas de gestação |
+| TPMORTEOCO       | Tipo de morte ocorrida |
+| EXPDIFDATA       | Explicação da diferença de datas |
+| DIFDATA          | Diferença entre datas |
+| DTCONINV         | Data de conclusão da investigação |
+| DTCONCASO        | Data de conclusão do caso |
+| NUDIASOBIN       | Número de dias entre óbito e investigação |
+| CODMUNNATU       | Código do município de nascimento |
+| ESTABDESCR       | Descrição do estabelecimento |
+| CRM              | Número do CRM do médico |
+| NUMEROLOTE       | Número do lote de dados |
+| STCODIFICA       | Status da codificação |
+| CODIFICADO       | Indicador de codificação realizada |
+| VERSAOSIST       | Versão do sistema |
+| VERSAOSCB        | Versão do sistema de codificação básica |
+| ATESTADO         | Indicador de atestado |
+| NUDIASOBCO       | Número de dias entre óbito e codificação |
+| FONTES           | Fontes da informação |
+| TPRESGINFO       | Tipo de registro da informação |
+| TPNIVELINV       | Tipo de nível da investigação |
+| NUDIASINF        | Número de dias entre óbito e informação |
+| FONTESINF        | Fontes da informação |
+| ALTCAUSA         | Alteração da causa |
+| NATURAL          | Indicador de morte natural |
+| IDADEminutos     | Idade em minutos |
+| IDADEhoras       | Idade em horas |
+| IDADEdias        | Idade em dias |
+| IDADEmeses       | Idade em meses |
+| IDADEanos        | Idade em anos |
+| OCUP             | Ocupação |
+| munResStatus     | Status do município de residência |
+| munResTipo       | Tipo do município de residência |
+| munResNome       | Nome do município de residência |
+| munResUf         | Unidade federativa do município de residência |
+| munResLat        | Latitude do município de residência |
+| munResLon        | Longitude do município de residência |
+| munResAlt        | Altitude do município de residência |
+| munResArea       | Área do município de residência |
+| OCUPMAE          | Ocupação da mãe |
