@@ -10,6 +10,7 @@ library(dplyr)
 library(stringr)
 library(ggplot2)
 library(arrow)
+library(tidyr)
 library(purrr)
 
 
@@ -124,6 +125,22 @@ find_idade_col <- function(df){
   cand
 }
 
+# Reforçando para 2000
+if (!exists("find_idade_col")) {
+  find_idade_col <- function(df){
+    nm <- names(df)
+    nm_ascii <- stringi::stri_trans_general(nm, "Latin-ASCII") |> tolower()
+    cand <- nm[ grepl("grupo.*idade|^idade\\b", nm_ascii) ]
+    cand <- cand[ !grepl("codigo|code", nm_ascii[match(cand, nm)], ignore.case = TRUE) ]
+    if (length(cand) == 0) stop("Não encontrei coluna de idade.")
+    if (length(cand) > 1) {
+      uc <- sapply(cand, \(x) length(unique(na.omit(df[[x]]))))
+      cand <- cand[ which.max(uc) ]
+    }
+    cand
+  }
+}
+
 # converte rótulo do SIDRA em idade "base": 0,5,10,…,100
 parse_idade_base <- function(x){
   x <- trimws(as.character(x))
@@ -137,6 +154,21 @@ parse_idade_base <- function(x){
   out
 }
 
+# Reforçando para 2000
+if (!exists("parse_idade_base")) {
+  parse_idade_base <- function(x){
+    x <- trimws(as.character(x))
+    out <- rep(NA_real_, length(x))
+    out[grepl("menos de 1", x, TRUE)] <- 0
+    out[grepl("\\b100\\b.*mais", x, TRUE)] <- 100
+    int <- is.na(out) & grepl("\\d+\\s*a\\s*\\d+", x)
+    out[int] <- as.numeric(sub(" .*", "", x[int]))
+    num <- is.na(out) & grepl("\\d+", x)
+    out[num] <- as.numeric(stringr::str_extract(x[num], "\\d+"))
+    out
+  }
+}
+
 # corta em faixas 5 anos padrão ONU
 cut_5y <- function(age){
   brks <- c(seq(0, 100, by = 5), Inf)
@@ -144,11 +176,20 @@ cut_5y <- function(age){
   cut(age, breaks = brks, labels = labs, right = TRUE, include.lowest = TRUE)
 }
 
+# Reforçando para 2000
+if (!exists("cut_5y")) {
+  cut_5y <- function(age){
+    brks <- c(seq(0, 100, by = 5), Inf)
+    labs <- c(paste0(sprintf("%02d", seq(0,95,5)), "–", sprintf("%02d", seq(4,99,5))), "100+")
+    cut(age, breaks = brks, labels = labs, right = TRUE, include.lowest = TRUE)
+  }
+}
+
 # baixa 1 município em 1 tabela/ano (censo)
 fetch_one_city_census <- function(table_id, year, cod7){
   df <- sidrar::get_sidra(
     x = table_id,
-    variable   = 93,               # População residente (censos)
+    variable   = 93,                 # População residente
     period     = as.character(year),
     geo        = "City",
     geo.filter = list(City = cod7),
@@ -156,33 +197,61 @@ fetch_one_city_census <- function(table_id, year, cod7){
     header     = TRUE
   )
   
-  # filtra forma de declaração quando existir (9514)
-  if ("Forma de declaração da idade" %in% names(df)) {
-    df <- df |> dplyr::filter(`Forma de declaração da idade` == "Total")
+  if (is.null(df) || nrow(df) == 0)
+    return(tibble::tibble(cod7=integer(), municipio=character(),
+                          sex=character(), age_group=factor(), pop=double()))
+  
+  # nomes robustos p/ município e código
+  nm       <- names(df)
+  nm_ascii <- stringi::stri_trans_general(nm, "Latin-ASCII") |> tolower()
+  
+  col_mun      <- nm[grep("^municipio$", nm_ascii)][1]
+  col_mun_code <- nm[grep("^municipio \\(codigo\\)$", nm_ascii)][1]
+  if (is.na(col_mun) || is.na(col_mun_code))
+    stop("Não achei colunas de Município / Município (Código) em ", year)
+  
+  # Situação do domicílio = Total (se existir)
+  col_sit <- nm[grep("^situacao do domicilio\\b", nm_ascii)][1]
+  if (!is.na(col_sit)) {
+    df <- df %>% dplyr::filter(.data[[col_sit]] %in% c("Total","total","TOTAL"))
   }
   
+  # coluna de idade textual (robusto)
   idade_col <- find_idade_col(df)
   
-  df |>
-    dplyr::filter(Sexo %in% c("Homens","Mulheres")) |>
-    dplyr::filter(!grepl("^Total$", .data[[idade_col]], TRUE),
-                  !grepl("ignorada|não declarad", .data[[idade_col]], TRUE)) |>
-    transmute(
-      cod7        = as.integer(substr(as.character(`Município (Código)`), 1, 7)),
-      municipio   = `Município`,
-      sex         = ifelse(Sexo=="Homens","H","M"),
-      idade_base  = parse_idade_base(.data[[idade_col]]),
-      pop         = as.numeric(Valor)
-    ) |>
-    mutate(age_group = cut_5y(idade_base)) |>
-    group_by(cod7, municipio, sex, age_group) |>
-    summarise(pop = sum(pop, na.rm = TRUE), .groups = "drop")
+  # Sexo: aceitar singular/plural (Homem/Homens, Mulher/Mulheres)
+  col_sexo <- nm[grep("^sexo\\b", nm_ascii)][1]
+  if (is.na(col_sexo)) stop("Coluna 'Sexo' não encontrada em ", year)
+  
+  sx <- df[[col_sexo]]
+  sex_m <- grepl("^hom", sx, ignore.case = TRUE)     # Homem / Homens
+  sex_f <- grepl("^mulh", sx, ignore.case = TRUE)    # Mulher / Mulheres
+  df$sex <- dplyr::case_when(sex_m ~ "M", sex_f ~ "F", TRUE ~ NA_character_)
+  
+  # limpa totais/idades ignoradas
+  out <- df %>%
+    dplyr::filter(!is.na(sex)) %>%
+    dplyr::filter(!grepl("^total$", .data[[idade_col]], ignore.case = TRUE),
+                  !grepl("ignorada|nao declarad|não declarad", .data[[idade_col]], ignore.case = TRUE)) %>%
+    dplyr::transmute(
+      cod7       = as.integer(substr(as.character(.data[[col_mun_code]]), 1, 7)),
+      municipio  = .data[[col_mun]],
+      sex,                                        # "M"/"F"
+      idade_base = parse_idade_base(.data[[idade_col]]),
+      pop        = suppressWarnings(as.numeric(Valor))
+    ) %>%
+    dplyr::filter(!is.na(idade_base), !is.na(pop)) %>%
+    dplyr::mutate(age_group = cut_5y(idade_base)) %>%
+    dplyr::group_by(cod7, municipio, sex, age_group) %>%
+    dplyr::summarise(pop = sum(pop, na.rm = TRUE), .groups = "drop")
+  
+  out
 }
 
 # baixa TODOS os municípios-PB em 1 tabela/ano (censo)
 fetch_pb_census <- function(table_id, year, codes){
   purrr::map_dfr(codes, function(cod){
-    Sys.sleep(0.12) # gentileza com API
+    Sys.sleep(0.12) # gentileza com a API
     fetch_one_city_census(table_id, year, cod)
   })
 }
@@ -325,6 +394,68 @@ years_all <- 1991:2023
 tot6579 <- fetch_6579_totals(years_all, pb_codes)
 # pode não haver 6579 para anos 1990s; tudo bem — o script cairá no geométrico
 
+
+# ---- normalizador robusto para "M"/"F" --------------------------------------
+norm_sex_MF <- function(x) {
+  # lógico -> M/F (ajuste se seu TRUE for "F")
+  if (is.logical(x)) return(ifelse(x, "M", "F"))
+  # numérico -> M/F
+  if (is.numeric(x) || is.integer(x)) {
+    x <- as.integer(x)
+    return(dplyr::case_when(
+      x %in% c(1, 0) ~ "M",   # ajuste aqui se 0/1 significarem o inverso
+      x == 2         ~ "F",
+      TRUE           ~ NA_character_
+    ))
+  }
+  # texto -> normaliza
+  x <- stringr::str_trim(as.character(x))
+  x <- iconv(x, from = "", to = "ASCII//TRANSLIT")      # tira acentos
+  x <- stringr::str_to_upper(x)
+  
+  dplyr::case_when(
+    x %in% c("M","MALE","MASC","MASCULINO","H","HOMEM") ~ "M",
+    x %in% c("F","FEMALE","FEM","FEMININO","M","MULHER") ~ "F",
+    x %in% c("", "NA", "N/A", "IGNORADO", "INDEFINIDO", "NAO INFORMADO") ~ NA_character_,
+    TRUE ~ NA_character_
+  )
+}
+
+# ---- aplica, loga tokens estranhos e filtra ---------------------------------
+normalize_and_filter_sex <- function(df, nm = deparse(substitute(df))) {
+  if (!"sex" %in% names(df)) return(df)  # nada a fazer
+  df$sex <- norm_sex_MF(df$sex)
+  
+  # tokens não-M/F (inclui NA)
+  bad <- df$sex[!(df$sex %in% c("M","F"))]
+  if (length(bad)) {
+    cat(sprintf("\n[%s] Tokens nao-M/F apos normalizar (mostrando unicos):\n", nm))
+    print(unique(bad))
+    cat(sprintf("[%s] Removendo %d linhas nao-M/F (inclui NA)\n",
+                nm, sum(!(df$sex %in% c("M","F")), na.rm = TRUE)))
+  }
+  
+  df <- dplyr::filter(df, sex %in% c("M","F"))
+  df$sex <- factor(df$sex, levels = c("M","F"))
+  df
+}
+
+# ---- aplica nas suas bases ---------------------------------------------------
+if (exists("sh_1991")) sh_1991 <- normalize_and_filter_sex(sh_1991, "sh_1991")
+if (exists("sh_2000")) sh_2000 <- normalize_and_filter_sex(sh_2000, "sh_2000")
+
+# (sanity check agora permitindo NA antes do filtro; mas já filtramos)
+stopifnot(all(sh_1991$sex %in% c("M","F")),
+          all(sh_2000$sex %in% c("M","F")))
+
+# ---- agora o interp roda sem erro de join -----------------------------------
+est_91_00 <- interp_interval(
+  sh0 = sh_1991, sh1 = sh_2000,
+  totals_y0 = T1991, totals_y1 = T2000,
+  years_seq = 1992:1999,
+  totals_6579 = tot6579
+)
+
 # 3) Interpolar intervalos
 # 1991->2000: anos alvo 1992..1999
 est_91_00 <- interp_interval(
@@ -376,6 +507,8 @@ if (nrow(T2023) > 0){
   est_2023 <- pb_2022 |> mutate(year = 2023) |>
     transmute(cod7, municipio, year, sex, age_group, pop)
 }
+
+
 
 # 5) Consolida tudo e salva
 out_all <- bind_rows(
